@@ -43,6 +43,12 @@ class FillStyleLayer extends StyleLayer {
             return super.isPaintValueZoomConstant(name);
         }
     }
+
+    isExtruded(globalProperties) {
+        return !this.isPaintValueFeatureConstant('fill-extrude-height') ||
+            !this.isPaintValueZoomConstant('fill-extrude-height') ||
+            this.getPaintValue('fill-extrude-height', globalProperties) !== 0;
+    }
 }
 
 module.exports = FillStyleLayer;
