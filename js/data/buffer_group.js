@@ -2,11 +2,12 @@
 
 const util = require('../util/util');
 const Buffer = require('./buffer');
+const ProgramConfiguration = require('./program_configuration');
 const VertexArrayObject = require('../render/vertex_array_object');
 
 class BufferGroup {
 
-    constructor(arrayGroup, programInterface) {
+    constructor(arrayGroup, programInterface, options) {
         this.layoutVertexBuffer = new Buffer(arrayGroup.layoutVertexArray,
             programInterface.layoutVertexArrayType.serialize(), Buffer.BufferType.VERTEX);
 
@@ -20,9 +21,15 @@ class BufferGroup {
                 programInterface.elementArrayType2.serialize(), Buffer.BufferType.ELEMENT);
         }
 
-        this.paintVertexBuffers = util.mapObject(arrayGroup.paintVertexArrays, (array) => {
-            return new Buffer(array.array, array.type, Buffer.BufferType.VERTEX);
-        });
+        this.layerData = {};
+        for (const layer of options.layers) {
+            const array = arrayGroup.paintVertexArrays[layer.id];
+            this.layerData[layer.id] = {
+                programConfiguration: ProgramConfiguration.createDynamic(
+                    programInterface.paintAttributes || [], layer, options.zoom),
+                paintVertexBuffer: new Buffer(array.array, array.type, Buffer.BufferType.VERTEX)
+            };
+        }
 
         this.segments = arrayGroup.segments;
         this.segments2 = arrayGroup.segments2;
@@ -44,8 +51,8 @@ class BufferGroup {
         if (this.elementBuffer2) {
             this.elementBuffer2.destroy();
         }
-        for (const n in this.paintVertexBuffers) {
-            this.paintVertexBuffers[n].destroy();
+        for (const n in this.layerData) {
+            this.layerData[n].paintVertexBuffer.destroy();
         }
         for (const segments of [this.segments, this.segments2]) {
             for (const segment of segments || []) {

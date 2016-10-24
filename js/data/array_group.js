@@ -1,6 +1,7 @@
 'use strict';
 
 const util = require('../util/util');
+const ProgramConfiguration = require('./program_configuration');
 
 class Segment {
     constructor(vertexOffset, primitiveOffset) {
@@ -31,7 +32,9 @@ class Segment {
  * @private
  */
 class ArrayGroup {
-    constructor(programInterface, programConfigurations) {
+    constructor(programInterface, layers, zoom) {
+        this.globalProperties = {zoom};
+
         const LayoutVertexArrayType = programInterface.layoutVertexArrayType;
         this.layoutVertexArray = new LayoutVertexArrayType();
 
@@ -41,12 +44,16 @@ class ArrayGroup {
         const ElementArrayType2 = programInterface.elementArrayType2;
         if (ElementArrayType2) this.elementArray2 = new ElementArrayType2();
 
-        this.paintVertexArrays = util.mapObject(programConfigurations, (programConfiguration) => {
+        this.paintVertexArrays = {};
+        for (const layer of layers) {
+            const programConfiguration = ProgramConfiguration.createDynamic(
+                programInterface.paintAttributes || [], layer, zoom);
             const PaintVertexArrayType = programConfiguration.paintVertexArrayType();
             const paintVertexArray = new PaintVertexArrayType();
             paintVertexArray.programConfiguration = programConfiguration;
-            return paintVertexArray;
-        });
+            paintVertexArray.layer = layer;
+            this.paintVertexArrays[layer.id] = paintVertexArray;
+        }
 
         this.segments = [];
         this.segments2 = [];
@@ -70,14 +77,16 @@ class ArrayGroup {
         return segment;
     }
 
-    populatePaintArrays(layers, globalProperties, featureProperties) {
-        for (const layer of layers) {
-            const paintArray = this.paintVertexArrays[layer.id];
-            paintArray.programConfiguration.populatePaintArray(
+    populatePaintArrays(featureProperties) {
+        for (const key in this.paintVertexArrays) {
+            const paintArray = this.paintVertexArrays[key];
+            const programConfiguration = paintArray.programConfiguration;
+            const layer = paintArray.layer;
+            programConfiguration.populatePaintArray(
                 layer,
                 paintArray,
                 this.layoutVertexArray.length,
-                globalProperties,
+                this.globalProperties,
                 featureProperties);
         }
     }

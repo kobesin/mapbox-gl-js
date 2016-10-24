@@ -63,7 +63,7 @@ test('Bucket', (t) => {
                 arrays.layoutVertexArray.emplaceBack(point.x * 2, point.y * 2);
                 arrays.elementArray.emplaceBack(1, 2, 3);
                 arrays.elementArray2.emplaceBack(point.x, point.y);
-                arrays.populatePaintArrays(this.layers, {}, feature.properties);
+                arrays.populatePaintArrays(feature.properties);
             }
         }
 
@@ -154,7 +154,7 @@ test('Bucket', (t) => {
 
         t.equal(bucket.arrays.test.layoutVertexArray.bytesPerElement, 0);
         t.deepEqual(
-            bucket.programConfigurations.test.one.uniforms[0].getValue.call(bucket),
+            bucket.arrays.test.paintVertexArrays.one.programConfiguration.uniforms[0].getValue.call(bucket),
             [5]
         );
 
